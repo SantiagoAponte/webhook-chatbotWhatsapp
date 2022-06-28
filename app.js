@@ -4,7 +4,6 @@
  * Remix this as the starting point for following the WhatsApp Echo Bot tutorial
  *
  */
-
 "use strict";
 
 // Access token for your app
@@ -21,11 +20,20 @@ const request = require("request"),
 
 // Sets server port and logs message on success
 app.listen(process.env.PORT || 1337, () => console.log("webhook is listening"));
-
+let products = [];
 // Accepts POST requests at /webhook endpoint
-app.post("/webhook", (req, res) => {
+app.post("/webhook",async (req, res) => {
   // Parse the request body from the POST
   let body = req.body;
+  let nombreAsesor = "";
+  let campana = "";
+  let fechaLimite = "";
+  let cupoDisponible = "";
+  let vitalPlata = "";
+  let totalAPagar = "";
+  let fechaPago = "";
+  let opcionCedula = "";
+  let bodyOfWS = "";
   // Check the Incoming webhook message
   console.log(JSON.stringify(req.body, null, 2));
 
@@ -49,8 +57,7 @@ app.post("/webhook", (req, res) => {
         msg_body = req.body.entry[0].changes[0].value.messages[0].button.text;
       } else if (req.body.entry[0].changes[0].value.messages[0].interactive.list_reply){
         msg_body = req.body.entry[0].changes[0].value.messages[0].interactive.list_reply.title;
-      }
-            
+      } 
       if(msg_body === "Hola" ||
          msg_body === "Hey" ||
          msg_body === "HOLA" ||
@@ -79,12 +86,16 @@ app.post("/webhook", (req, res) => {
         headers: { "Content-Type": "application/json" },
       });
          
- }   
+ }
       // else if (!res.sendStatus(200)){
 //     // Return a '404 Not Found' if event is not from a WhatsApp API
 //     res.sendStatus(404);
 //   }
-  else if(msg_body === "Menu" || msg_body === "MENU" || msg_body === "Regresar a Menu" || msg_body === "No" || msg_body === "Regresar al Menu"){
+  else if(msg_body === "Menu" || 
+          msg_body === "MENU" || 
+          msg_body === "Regresar a Menu" || 
+          msg_body === "No" ||
+          msg_body === "Regresar al Menu"){
      axios({
         method: "POST", // Required, HTTP method, a string, e.g. POST, GET
         url:
@@ -170,10 +181,70 @@ app.post("/webhook", (req, res) => {
         },
         headers: { "Content-Type": "application/json" },
       });
-         
+     opcionCedula = "1"
+ 
 }   
-      else if(msg_body === "1144104695"){
-        axios({
+        
+       else if(opcionCedula === "1"){
+        
+        let xmls=`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\
+                            xmlns:tem="http://tempuri.org/">\
+            <soapenv:Header/>\
+            <soapenv:Body>\
+              <tem:confirmaDatosBasicos>\
+                <tem:numeroDocumento>${msg_body}</tem:numeroDocumento>\
+                <tem:Usuario>ftMQaMKlOcZs1xkbtkdQcxROYzDVpJGunMpu1QgJ0LI=</tem:Usuario>\
+              <tem:Password>Zqxl82ZBJ2lk6DxZUh6ZV98JF60YgQJMuc7Oo5UYuMI=</tem:Password>\
+            </tem:confirmaDatosBasicos>\
+            </soapenv:Body>\
+          </soapenv:Envelope>`;
+
+axios.post('https://portal.lavital.co/WS_LIQUIDACION_PBA/wsConsultaDocumento.asmx?wsdl',
+           xmls,
+           {headers:
+             {'Content-Type': 'text/xml'}
+           }).then(res=>{
+            var respuesta = res.data
+            console.log(res.data)
+           var cadenaCompleta = respuesta.substring(1222,1808)
+             var arrayDeCadenas = cadenaCompleta.split("|");
+           var cadenaError = respuesta.substring(1173,1202)
+           if (cadenaError === "NO EXISTE NUMERO DE DOCUMENTO"){
+             console.log("no haga nada");
+             
+          //   axios({
+        //method: "POST", // Required, HTTP method, a string, e.g. POST, GET
+        //url:
+          //"https://graph.facebook.com/v12.0/" +
+          //phone_number_id +
+          //"/messages?access_token=" +
+          //token,
+          //data: {
+            //messaging_product: "whatsapp",
+            //to: from,
+            //type: "template",
+            //template: {
+              //name: "mensaje_noregistrado",
+              //language: {
+               // code:"es"
+             // }
+           // }
+         // },
+       // headers: { "Content-Type": "application/json" },
+     // });
+             
+           }
+  
+  else if (msg_body != msg_body){
+            nombreAsesor = arrayDeCadenas[0].substring(0,15)
+            campana = arrayDeCadenas[8].substring(9,15)
+            fechaLimite = arrayDeCadenas[5].substring(24,34);
+            cupoDisponible = arrayDeCadenas[1].substring(17,18);
+            vitalPlata = arrayDeCadenas[12].substring(13,14);
+            totalAPagar = arrayDeCadenas[2].substring(15,16);
+            fechaPago = arrayDeCadenas[3].substring(22,32);
+             
+              axios({
         method: "POST", // Required, HTTP method, a string, e.g. POST, GET
         url:
           "https://graph.facebook.com/v12.0/" +
@@ -195,7 +266,7 @@ app.post("/webhook", (req, res) => {
                 "parameters": [
                     {
                     "type": "text",
-                    "text": name_user
+                    "text": nombreAsesor
                 }
                 ]
             },
@@ -204,27 +275,27 @@ app.post("/webhook", (req, res) => {
                "parameters": [
                    {
                        "type": "text",
-                       "text": "202207"
+                       "text": campana
                    },
                    {
                        "type": "text",
-                       "text": "21/06/2022"
+                       "text": fechaLimite
                    },
                    {  
                        "type": "text",
-                       "text": "400000"
+                       "text": cupoDisponible
                    },
                    {
                        "type": "text",
-                       "text": "0"
+                       "text": vitalPlata
                    },
                    {
                        "type": "text",
-                       "text": "0"
+                       "text": totalAPagar
                    },
                    {
                        "type": "text",
-                       "text": "00/00/00"
+                       "text": fechaPago
                    }
                ]
             }    
@@ -233,41 +304,109 @@ app.post("/webhook", (req, res) => {
 },
         headers: { "Content-Type": "application/json" },
       });
-         
+           }   
+           //var parseString = require('xml2js').parseString;//forma de convertir respuesta a json, pero los parametros los muestra como por ejemplo: soap:Envelope (No Sirve).
+           //parseString(respuesta, function (err, result) {//forma de convertir respuesta a json, pero los parametros los muestra como por ejemplo: soap:Envelope (No Sirve).
+            //let data = JSON.stringify(result) //forma de convertir respuesta a json, pero los parametros los muestra como por ejemplo: soap:Envelope (No Sirve).
+           // console.log(data); //forma de convertir respuesta a json, pero los parametros los muestra como por ejemplo: soap:Envelope (No Sirve).
+         // }); //forma de convertir respuesta a json, pero los parametros los muestra como por ejemplo: soap:Envelope (No Sirve).
+           }).catch(err=>{
+              console.log(err)
+});
+        
 } 
-       else if(msg_body === "Montar Pedido"){
-      axios({
+        
+    if(msg_body === "ENVIAR"){
+      for (var i = 0; i < products.length; i++) { 
+
+            bodyOfWS += `<tem:objDetallePedido><tem:CodigoProducto>${products[i][0]}</tem:CodigoProducto><tem:Cantidad>${products[i][1]}</tem:Cantidad></tem:objDetallePedido>`
+            console.log(bodyOfWS)
+            
+        } 
+      
+      
+      let xmls=`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <tem:insertaPedido> 
+         <tem:objEncabezadoPed>
+            <tem:numeroDocumento>80219378</tem:numeroDocumento>
+            <tem:Campana>202208</tem:Campana>
+         </tem:objEncabezadoPed>
+         <tem:objdetallePedido>
+               ${bodyOfWS}
+         </tem:objdetallePedido>
+         <tem:opcion>1</tem:opcion>
+         <tem:medioPago>1</tem:medioPago>
+         <tem:VlrDescuentoPadic>0</tem:VlrDescuentoPadic>
+         <tem:VlrDescuentoSaldoFavor>0</tem:VlrDescuentoSaldoFavor>
+         <tem:ViaIngreso>CHAT_BOTS_R</tem:ViaIngreso>
+         <tem:VlrAdicional1>0</tem:VlrAdicional1>
+         <tem:DatoAdicional1>NA</tem:DatoAdicional1>
+         <tem:Usuario>ftMQaMKlOcZs1xkbtkdQcxROYzDVpJGunMpu1QgJ0LI=</tem:Usuario>
+         <tem:Password>Zqxl82ZBJ2lk6DxZUh6ZV98JF60YgQJMuc7Oo5UYuMI=</tem:Password>
+      </tem:insertaPedido>
+   </soapenv:Body>
+</soapenv:Envelope>`; 
+      
+      console.log(xmls)
+   
+      axios.post('https://portal.lavital.co/WS_LIQUIDACION_PBA/wsConsultaDocumento.asmx?wsdl',
+           xmls,
+           {headers:
+             {'Content-Type': 'text/xml'}
+           }).then(res=>{
+	console.log(res.data)
+     	}).catch(err=>{
+              console.log(err)
+});
+      
+    }
+      
+    else if(msg_body === msg_body){
+      
+    var Codes = msg_body.split(" ");
+      products.push(Codes);
+      
+  
+       }
+          
+      else if (msg_body === "Montar Pedido"){
+
+       axios({
         method: "POST", // Required, HTTP method, a string, e.g. POST, GET
         url:
           "https://graph.facebook.com/v12.0/" +
           phone_number_id +
           "/messages?access_token=" +
           token,
-        data : {
-    messaging_product: "whatsapp",
-    to: from,
-    type: "template",
-    template: {
-       name: "mensaje_terminoscondiciones",
-       language: {
+        data:  {
+    "messaging_product": "whatsapp",
+    "to": from,
+    "type": "template",
+    "template": {
+       "name": "mensaje_montarpedido",
+       "language": {
            "code": "es"
        },
-      components: [
-           {
-               type: "header",
-               parameters: [
-                   {
-                       "type": "text",
-                       "text": name_user
-                   }
-               ]
-           }
+      "components": [
+            {
+                "type": "body",
+                "parameters": [
+                    {
+                    "type": "text",
+                    "text": "119.000"
+                }
+                ]
+            }   
        ]
     }
 },
         headers: { "Content-Type": "application/json" },
       });
-    }
+
+}
+ 
        else if(msg_body === "Sticker"){
         axios({
         method: "POST", // Required, HTTP method, a string, e.g. POST, GET
@@ -286,9 +425,9 @@ app.post("/webhook", (req, res) => {
         headers: { "Content-Type": "application/json" },
       });
          
-}   
+} 
       else if(msg_body === "Si"){
-      axios({
+      axios( {
         method: "POST", // Required, HTTP method, a string, e.g. POST, GET
         url:
           "https://graph.facebook.com/v12.0/" +
@@ -480,6 +619,102 @@ app.post("/webhook", (req, res) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+      else if(msg_body === "Montar" || msg_body === "pedido"){
+       try {
+    await axios({
+        method: "POST", // Required, HTTP method, a string, e.g. POST, GET
+        url:
+          "https://graph.facebook.com/v12.0/" +
+          phone_number_id +
+          "/messages?access_token=" +
+          token,
+        data : {
+  messaging_product: "whatsapp",
+    to: from,
+    type: "template",
+    template: {
+       name: "mensaje_condiciones",
+       language: {
+           code: "es"
+       },
+      components: [
+           {
+               type: "header",
+               parameters: [
+                   {
+                       type: "text",
+                       text: " "
+                   }
+               ]
+           }
+       ]
+    }
+},
+    headers: { "Content-Type": "application/json" },
+      })
+    } catch (err) {
+    console.log(err.response);
+  }
+ 
+}
+      else if(msg_body === "Quiero un Asesor"){
+        axios({
+        method: "POST", // Required, HTTP method, a string, e.g. POST, GET
+        url:
+          "https://graph.facebook.com/v12.0/" +
+          phone_number_id +
+          "/messages?access_token=" +
+          token,
+        data: {
+          messaging_product: "whatsapp",
+          to: from,
+          type: "text",
+          
+          text: { body: "El Asesor Santiago Aponte Se pondra en contacto contigo" },
+        },
+        headers: { "Content-Type": "application/json" },
+      });
+       
+}
+ else if (
+  msg_body != "Quiero un Asesor" ||
+  msg_body != "pedido" ||
+  msg_body != "Montar" ||
+  msg_body != "Mi Directora" ||
+  msg_body != "Mi Negocio Vital" ||
+  msg_body != "Otros Canales" ||
+  msg_body != "Catalogo Merca Ahorro" ||
+  msg_body != "Catalogo Bienestar" ||
+  msg_body != "Catálogos LV" ||
+  msg_body != "Catalogos LV" ||
+  msg_body != "Ir a Pagar" ||
+  msg_body != "Ir a pagar" ||
+  msg_body != "Si" ||
+  msg_body != "Sticker" ||
+  msg_body != "Menu" ||
+  msg_body != "Regresar a Menu" ||
+  msg_body != "Menú" 
+){
+ 
+  axios({
+        method: "POST", // Required, HTTP method, a string, e.g. POST, GET
+        url:
+          "https://graph.facebook.com/v12.0/" +
+          phone_number_id +
+          "/messages?access_token=" +
+          token,
+        data: {
+          messaging_product: "whatsapp",
+          to: from,
+          type: "text",
+          
+          text: { body: "Lo siento, no entiendo tu solicitud." },
+        },
+        headers: { "Content-Type": "application/json" },
+      });
+  
+}
+      
 }
 res.sendStatus(200);
 }
@@ -509,6 +744,7 @@ app.get("/webhook", (req, res) => {
       // Respond with 200 OK and challenge token from the request
       console.log("WEBHOOK_VERIFIED");
       res.status(200).send(challenge);
+      console.log(res)
     } else {
       // Responds with '403 Forbidden' if verify tokens do not match
       res.sendStatus(403);
